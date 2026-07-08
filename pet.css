@@ -1,0 +1,11 @@
+#desktop-pet-container {
+  position: fixed;
+  left: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+  will-change: transform;
+}
+
+#desktop-pet-sprite {
+  will-change: transform, background-position;
+}

@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Add a custom pet — Petmon</title>
+    <link rel="stylesheet" href="add-pet.css" />
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <span class="header-emoji">🐾</span>
+        <h1>Add a custom pet</h1>
+      </div>
+
+      <label class="field-label">Name</label>
+      <input
+        type="text"
+        id="new-pet-name"
+        placeholder="e.g. Biscuit"
+        maxlength="20" />
+
+      <label class="field-label">Character</label>
+      <div class="template-grid" id="template-grid">
+        <button class="template-option" data-template="cat">
+          <div class="template-preview" data-preview="cat"></div>
+          <span>Cat</span>
+        </button>
+        <button class="template-option" data-template="dog">
+          <div class="template-preview" data-preview="dog"></div>
+          <span>Dog</span>
+        </button>
+        <button class="template-option" data-template="ducky">
+          <div class="template-preview" data-preview="ducky"></div>
+          <span>Ducky</span>
+        </button>
+        <button class="template-option" data-template="monster">
+          <div class="template-preview" data-preview="monster"></div>
+          <span>Monster</span>
+        </button>
+        <button class="template-option" data-template="pinkmonster">
+          <div class="template-preview" data-preview="pinkmonster"></div>
+          <span>Doogle</span>
+        </button>
+      </div>
+
+      <label class="field-label">Color shift</label>
+      <input type="range" id="color-slider" min="0" max="360" value="0" />
+
+      <label class="field-label">Sound (audio file)</label>
+      <input type="file" id="sound-file" accept="audio/*" />
+      <span class="file-hint" id="sound-file-name">No file chosen</span>
+
+      <div class="form-buttons">
+        <button class="save-btn" id="save-pet-btn">Save pet</button>
+        <button class="cancel-btn" id="cancel-btn">Cancel and close tab</button>
+      </div>
+      <p class="form-error" id="form-error"></p>
+      <p class="success-msg" id="success-msg" hidden>
+        ✅ Saved! You can close this tab and reopen the extension popup to see
+        it.
+      </p>
+    </div>
+
+    <script src="add-pet.js"></script>
+  </body>
+</html>

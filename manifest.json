@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Petmon",
+  "version": "3.0",
+  "description": "A small animated pet (cat, duck, or your own custom pet) walks along the bottom of every page and makes a sound when you click.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": ["storage", "offscreen"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "Petmon settings"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["pet.js"],
+      "css": ["pet.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["sounds/*.mp3", "sounds/*.wav", "sprites/*.png"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
