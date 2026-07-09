@@ -1,9 +1,9 @@
 const TEMPLATES = {
-  cat: { previewFile: "sprites/cat-idle.png", frameSize: 48, previewFrames: 4 },
-  dog: { previewFile: "sprites/dog-idle.png", frameSize: 48, previewFrames: 4 },
-  ducky: { previewFile: "sprites/ducky-idle.png", frameSize: 48, previewFrames: 2 },
-  monster: { previewFile: "sprites/monster-idle.png", frameSize: 32, previewFrames: 4 },
-  pinkmonster: { previewFile: "sprites/pinkmonster-idle.png", frameSize: 32, previewFrames: 4 },
+  cat: { previewFile: "assets/sprites/cat-idle.png", frameSize: 48, previewFrames: 4 },
+  dog: { previewFile: "assets/sprites/dog-idle.png", frameSize: 48, previewFrames: 4 },
+  ducky: { previewFile: "assets/sprites/ducky-idle.png", frameSize: 48, previewFrames: 2 },
+  monster: { previewFile: "assets/sprites/monster-idle.png", frameSize: 32, previewFrames: 4 },
+  pinkmonster: { previewFile: "assets/sprites/pinkmonster-idle.png", frameSize: 32, previewFrames: 4 },
 };
 
 const nameInput = document.getElementById("new-pet-name");

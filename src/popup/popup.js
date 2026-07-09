@@ -1,22 +1,20 @@
 const TEMPLATES = {
-  cat: { previewFile: "sprites/cat-idle.png", frameSize: 48, previewFrames: 4 },
-  dog: { previewFile: "sprites/dog-idle.png", frameSize: 48, previewFrames: 4 },
-  ducky: { previewFile: "sprites/ducky-idle.png", frameSize: 48, previewFrames: 2 },
-  monster: { previewFile: "sprites/monster-idle.png", frameSize: 32, previewFrames: 4 },
-  pinkmonster: { previewFile: "sprites/pinkmonster-idle.png", frameSize: 32, previewFrames: 4 },
+  cat: { previewFile: "assets/sprites/cat-idle.png", frameSize: 48, previewFrames: 4 },
+  dog: { previewFile: "assets/sprites/dog-idle.png", frameSize: 48, previewFrames: 4 },
+  ducky: { previewFile: "assets/sprites/ducky-idle.png", frameSize: 48, previewFrames: 2 },
+  monster: { previewFile: "assets/sprites/monster-idle.png", frameSize: 32, previewFrames: 4 },
+  pinkmonster: { previewFile: "assets/sprites/pinkmonster-idle.png", frameSize: 32, previewFrames: 4 },
 };
 
 const BUILTIN_PRESETS = [
-  { id: "builtin_whiskers", name: "Whiskers", template: "cat", color: 0, sound: "sounds/cat.wav", builtin: true, words: ["Meow!", "Meow~", "Mrow!"] },
-  { id: "builtin_quackers", name: "Quackers", template: "ducky", color: 0, sound: "sounds/duck.mp3", builtin: true, words: ["Quack!", "QUACK!", "Quack quack!"] },
+  { id: "builtin_whiskers", name: "Whiskers", template: "cat", color: 0, sound: "assets/sounds/cat.wav", builtin: true, words: ["Meow!", "Meow~", "Mrow!"] },
+  { id: "builtin_quackers", name: "Quackers", template: "ducky", color: 0, sound: "assets/sounds/duck.mp3", builtin: true, words: ["Quack!", "QUACK!", "Quack quack!"] },
 ];
 
 const enabledToggle = document.getElementById("enabled-toggle");
-const petOnlyToggle = document.getElementById("pet-only-toggle");
+const anywhereSoundToggle = document.getElementById("anywhere-sound-toggle");
 const sizeSlider = document.getElementById("size-slider");
 const sizeValue = document.getElementById("size-value");
-const liftSlider = document.getElementById("lift-slider");
-const liftValue = document.getElementById("lift-value");
 const petGrid = document.getElementById("pet-grid");
 const toggleAddFormBtn = document.getElementById("toggle-add-form");
 
@@ -36,7 +34,7 @@ function applyPreviewStyle(el, templateKey, colorDeg) {
 // ---- Opens the add-pet form as a full tab (native file picker closes popups,
 // but never closes a normal tab) ----
 toggleAddFormBtn.addEventListener("click", () => {
-  chrome.tabs.create({ url: chrome.runtime.getURL("add-pet.html") });
+  chrome.tabs.create({ url: chrome.runtime.getURL("src/add-pet/add-pet.html") });
 });
 
 // ---- Pet grid rendering ----
@@ -93,20 +91,21 @@ chrome.storage.local.get(
   {
     enabled: true,
     activePetId: "builtin_whiskers",
-    soundOnPetOnly: false,
+    soundOnPetOnly: true,
     customPets: [],
     petScale: 1,
     petLift: 0,
   },
   (settings) => {
     enabledToggle.checked = settings.enabled;
-    petOnlyToggle.checked = settings.soundOnPetOnly;
+    anywhereSoundToggle.checked = !settings.soundOnPetOnly;
     currentCustomPets = settings.customPets || [];
     currentActiveId = settings.activePetId;
     sizeSlider.value = settings.petScale;
     sizeValue.textContent = `${parseFloat(settings.petScale).toFixed(1)}x`;
-    liftSlider.value = settings.petLift;
-    liftValue.textContent = `${settings.petLift}px`;
+    if (settings.petLift !== 0) {
+      chrome.storage.local.set({ petLift: 0 });
+    }
     renderPetGrid();
   }
 );
@@ -125,8 +124,8 @@ enabledToggle.addEventListener("change", () => {
   chrome.storage.local.set({ enabled: enabledToggle.checked });
 });
 
-petOnlyToggle.addEventListener("change", () => {
-  chrome.storage.local.set({ soundOnPetOnly: petOnlyToggle.checked });
+anywhereSoundToggle.addEventListener("change", () => {
+  chrome.storage.local.set({ soundOnPetOnly: !anywhereSoundToggle.checked });
 });
 
 sizeSlider.addEventListener("input", () => {
@@ -134,11 +133,4 @@ sizeSlider.addEventListener("input", () => {
 });
 sizeSlider.addEventListener("change", () => {
   chrome.storage.local.set({ petScale: parseFloat(sizeSlider.value) });
-});
-
-liftSlider.addEventListener("input", () => {
-  liftValue.textContent = `${liftSlider.value}px`;
-});
-liftSlider.addEventListener("change", () => {
-  chrome.storage.local.set({ petLift: parseInt(liftSlider.value, 10) });
 });

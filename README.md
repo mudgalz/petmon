@@ -1,6 +1,6 @@
 # Petmon 🐾
 
-![Petmon Demo](demo.gif)
+![Petmon Demo](assets/demo.gif)
 
 A simple Chrome extension that adds a cute animated pet to the bottom of every webpage.
 
@@ -10,7 +10,7 @@ A simple Chrome extension that adds a cute animated pet to the bottom of every w
 - Built-in and custom pets
 - Upload custom pet sounds
 - Customize pet color
-- Adjust pet size and position
+- Adjust pet size
 - Choose how the pet reacts to clicks
 - Settings are saved locally
 

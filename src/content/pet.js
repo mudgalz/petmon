@@ -1,19 +1,19 @@
 (function () {
   // ---- Sprite templates: separate idle/walk sheets, each a row of square frames ----
   const TEMPLATES = {
-    cat: { idleFile: "sprites/cat-idle.png", walkFile: "sprites/cat-walk.png", frameSize: 48, idleFrames: 4, walkFrames: 6 },
-    dog: { idleFile: "sprites/dog-idle.png", walkFile: "sprites/dog-walk.png", frameSize: 48, idleFrames: 4, walkFrames: 6 },
-    ducky: { idleFile: "sprites/ducky-idle.png", walkFile: "sprites/ducky-walk.png", frameSize: 48, idleFrames: 2, walkFrames: 4 },
-    monster: { idleFile: "sprites/monster-idle.png", walkFile: "sprites/monster-walk.png", frameSize: 32, idleFrames: 4, walkFrames: 6 },
-    pinkmonster: { idleFile: "sprites/pinkmonster-idle.png", walkFile: "sprites/pinkmonster-walk.png", frameSize: 32, idleFrames: 4, walkFrames: 6 },
+    cat: { idleFile: "assets/sprites/cat-idle.png", walkFile: "assets/sprites/cat-walk.png", frameSize: 48, idleFrames: 4, walkFrames: 6 },
+    dog: { idleFile: "assets/sprites/dog-idle.png", walkFile: "assets/sprites/dog-walk.png", frameSize: 48, idleFrames: 4, walkFrames: 6 },
+    ducky: { idleFile: "assets/sprites/ducky-idle.png", walkFile: "assets/sprites/ducky-walk.png", frameSize: 48, idleFrames: 2, walkFrames: 4 },
+    monster: { idleFile: "assets/sprites/monster-idle.png", walkFile: "assets/sprites/monster-walk.png", frameSize: 32, idleFrames: 4, walkFrames: 6 },
+    pinkmonster: { idleFile: "assets/sprites/pinkmonster-idle.png", walkFile: "assets/sprites/pinkmonster-walk.png", frameSize: 32, idleFrames: 4, walkFrames: 6 },
   };
 
   const TARGET_DISPLAY_SIZE = 56; // baseline rendered height in px before user scale is applied
 
   // ---- Built-in presets (non-deletable) ----
   const BUILTIN_PRESETS = [
-    { id: "builtin_whiskers", name: "Whiskers", template: "cat", color: 0, sound: "sounds/cat.wav", builtin: true, words: ["Meow!", "Meow~", "Mrow!"] },
-    { id: "builtin_quackers", name: "Quackers", template: "ducky", color: 0, sound: "sounds/duck.mp3", builtin: true, words: ["Quack!", "QUACK!", "Quack quack!"] },
+    { id: "builtin_whiskers", name: "Whiskers", template: "cat", color: 0, sound: "assets/sounds/cat.wav", builtin: true, words: ["Meow!", "Meow~", "Mrow!"] },
+    { id: "builtin_quackers", name: "Quackers", template: "ducky", color: 0, sound: "assets/sounds/duck.mp3", builtin: true, words: ["Quack!", "QUACK!", "Quack quack!"] },
   ];
 
   let container, sprite;
@@ -29,9 +29,8 @@
 
   let allPresets = [...BUILTIN_PRESETS];
   let activePreset = BUILTIN_PRESETS[0];
-  let soundOnPetOnly = false;
+  let soundOnPetOnly = true;
   let petScale = 1;
-  let petLift = 0;
 
   function getPresetById(id) {
     return allPresets.find((p) => p.id === id) || BUILTIN_PRESETS[0];
@@ -81,7 +80,7 @@
     const size = currentDisplaySize();
     container.style.width = `${size}px`;
     container.style.height = `${size}px`;
-    container.style.bottom = `${petLift}px`;
+    container.style.bottom = "0px";
     container.style.transform = `translateX(${posX}px)`;
   }
 
@@ -269,17 +268,15 @@
     {
       enabled: true,
       activePetId: "builtin_whiskers",
-      soundOnPetOnly: false,
+      soundOnPetOnly: true,
       customPets: [],
       petScale: 1,
-      petLift: 0,
     },
     (settings) => {
       allPresets = [...BUILTIN_PRESETS, ...(settings.customPets || [])];
       activePreset = getPresetById(settings.activePetId);
       soundOnPetOnly = !!settings.soundOnPetOnly;
       petScale = settings.petScale || 1;
-      petLift = settings.petLift || 0;
       if (settings.enabled) start();
     }
   );
@@ -305,11 +302,6 @@
 
     if (changes.petScale) {
       petScale = changes.petScale.newValue || 1;
-      applyAppearanceSettings();
-    }
-
-    if (changes.petLift) {
-      petLift = changes.petLift.newValue || 0;
       applyAppearanceSettings();
     }
 

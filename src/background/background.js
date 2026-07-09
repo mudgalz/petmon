@@ -19,7 +19,7 @@ async function setupOffscreenDocument() {
   }
 
   creatingOffscreenPromise = chrome.offscreen.createDocument({
-    url: "offscreen.html",
+    url: "src/background/offscreen.html",
     reasons: ["AUDIO_PLAYBACK"],
     justification:
       "Play desktop pet sound effects reliably, regardless of the current page's Content-Security-Policy.",

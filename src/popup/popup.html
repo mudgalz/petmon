@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="popup">
+      <div class="header">
+        <h1>Petmon</h1>
+        <label class="switch header-switch" title="Show or hide Petmon on pages">
+          <input
+            type="checkbox"
+            id="enabled-toggle"
+            aria-label="Show or hide Petmon on pages" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="row">
+        <span class="section-label">Your pets</span>
+      </div>
+
+      <div class="pet-grid" id="pet-grid"></div>
+
+      <button class="add-pet-btn" id="toggle-add-form">+ Add custom pet</button>
+
+      <details class="settings-panel">
+        <summary class="settings-summary">
+          <span>Settings</span>
+          <svg
+            class="chevron"
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            aria-hidden="true">
+            <path
+              d="M6 9l6 6 6-6"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </summary>
+
+        <div class="settings-content">
+          <div class="slider-row">
+            <div class="slider-row-label">
+              <span>Size</span>
+              <span id="size-value">1.0x</span>
+            </div>
+            <input
+              type="range"
+              id="size-slider"
+              min="0.5"
+              max="2.5"
+              step="0.1"
+              value="1" />
+          </div>
+
+          <div class="row toggle-row settings-toggle-row">
+            <span>Play sound on anywhere click</span>
+            <label class="switch">
+              <input type="checkbox" id="anywhere-sound-toggle" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
