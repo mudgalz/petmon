@@ -1,12 +1,30 @@
 (function () {
-  // ---- Sprite templates: separate idle/walk sheets, each a row of square frames ----
+  // Sprite templates can use separate sheets, rows within a sheet, rectangular
+  // frames, or animations that start partway through a longer strip.
   const TEMPLATES = {
-    cat: { idleFile: "assets/sprites/cat-idle.png", walkFile: "assets/sprites/cat-walk.png", frameSize: 48, idleFrames: 4, walkFrames: 6 },
-    dog: { idleFile: "assets/sprites/dog-idle.png", walkFile: "assets/sprites/dog-walk.png", frameSize: 48, idleFrames: 4, walkFrames: 6 },
-    ducky: { idleFile: "assets/sprites/ducky-idle.png", walkFile: "assets/sprites/ducky-walk.png", frameSize: 48, idleFrames: 2, walkFrames: 4 },
-    monster: { idleFile: "assets/sprites/monster-idle.png", walkFile: "assets/sprites/monster-walk.png", frameSize: 32, idleFrames: 4, walkFrames: 6 },
-    pinkmonster: { idleFile: "assets/sprites/pinkmonster-idle.png", walkFile: "assets/sprites/pinkmonster-walk.png", frameSize: 32, idleFrames: 4, walkFrames: 6 },
+    cat: spriteTemplate(48, 48, "assets/sprites/cat-idle.png", 4, "assets/sprites/cat-walk.png", 6),
+    dog: spriteTemplate(48, 48, "assets/sprites/dog-idle.png", 4, "assets/sprites/dog-walk.png", 6),
+    ducky: spriteTemplate(48, 48, "assets/sprites/ducky-idle.png", 2, "assets/sprites/ducky-walk.png", 4),
+    monster: spriteTemplate(32, 32, "assets/sprites/monster-idle.png", 4, "assets/sprites/monster-walk.png", 6),
+    pinkmonster: spriteTemplate(32, 32, "assets/sprites/pinkmonster-idle.png", 4, "assets/sprites/pinkmonster-walk.png", 6),
+    punk: spriteTemplate(48, 48, "assets/sprites/punk-idle.png", 4, "assets/sprites/punk-walk.png", 6),
+    tard: { ...spriteTemplate(24, 24, "assets/sprites/tard-idle.png", 4, "assets/sprites/tard-walk.png", 6), groundOffset: 3 },
+    wally: spriteTemplate(32, 32, "assets/sprites/wally-idle.png", 2, "assets/sprites/wally-walk.png", 6),
+    finn: { ...spriteTemplate(32, 32, "assets/sprites/finn-idle.png", 9, "assets/sprites/finn-walk.png", 7), groundOffset: 6 },
   };
+
+  function animation(file, frames, sheetWidth, sheetHeight, startX = 0, startY = 0) {
+    return { file, frames, sheetWidth, sheetHeight, startX, startY };
+  }
+
+  function spriteTemplate(frameWidth, frameHeight, idleFile, idleFrames, walkFile, walkFrames) {
+    return {
+      frameWidth,
+      frameHeight,
+      idle: animation(idleFile, idleFrames, frameWidth * idleFrames, frameHeight),
+      walk: animation(walkFile, walkFrames, frameWidth * walkFrames, frameHeight),
+    };
+  }
 
   const TARGET_DISPLAY_SIZE = 56; // baseline rendered height in px before user scale is applied
 
@@ -44,10 +62,10 @@
     }
   }
 
-  function currentDisplaySize() {
+  function currentDisplayDimensions() {
     const tmpl = TEMPLATES[activePreset.template] || TEMPLATES.cat;
-    const baseScale = TARGET_DISPLAY_SIZE / tmpl.frameSize;
-    return tmpl.frameSize * baseScale * petScale;
+    const height = TARGET_DISPLAY_SIZE * petScale;
+    return { width: (tmpl.frameWidth / tmpl.frameHeight) * height, height };
   }
 
   function buildDom() {
@@ -60,8 +78,8 @@
     container.appendChild(sprite);
     document.documentElement.appendChild(container);
 
-    const size = currentDisplaySize();
-    posX = Math.random() * (window.innerWidth - size);
+    const dimensions = currentDisplayDimensions();
+    posX = Math.random() * Math.max(0, window.innerWidth - dimensions.width);
     direction = Math.random() > 0.5 ? 1 : -1;
     layoutContainer();
     applySpriteVisual();
@@ -77,9 +95,10 @@
 
   function layoutContainer() {
     if (!container) return;
-    const size = currentDisplaySize();
-    container.style.width = `${size}px`;
-    container.style.height = `${size}px`;
+    const dimensions = currentDisplayDimensions();
+    posX = Math.min(posX, Math.max(0, window.innerWidth - dimensions.width));
+    container.style.width = `${dimensions.width}px`;
+    container.style.height = `${dimensions.height}px`;
     container.style.bottom = "0px";
     container.style.transform = `translateX(${posX}px)`;
   }
@@ -87,14 +106,17 @@
   function applySpriteVisual() {
     if (!sprite) return;
     const tmpl = TEMPLATES[activePreset.template] || TEMPLATES.cat;
-    const size = currentDisplaySize();
-    const scaleFactor = size / tmpl.frameSize;
+    const dimensions = currentDisplayDimensions();
+    const scaleFactor = dimensions.height / tmpl.frameHeight;
 
-    sprite.style.width = `${tmpl.frameSize}px`;
-    sprite.style.height = `${tmpl.frameSize}px`;
+    sprite.style.width = `${tmpl.frameWidth}px`;
+    sprite.style.height = `${tmpl.frameHeight}px`;
     sprite.style.position = "absolute";
     sprite.style.left = "50%";
-    sprite.style.bottom = "0";
+    // Some source sheets include transparent canvas below the character's
+    // feet. Move that padding below the viewport edge so visible pixels, not
+    // the sprite canvas, sit on the ground.
+    sprite.style.bottom = `${-(tmpl.groundOffset || 0) * scaleFactor}px`;
     sprite.style.imageRendering = "pixelated";
     sprite.style.backgroundRepeat = "no-repeat";
     sprite.dataset.scaleFactor = scaleFactor;
@@ -113,12 +135,12 @@
   function setFrame(walking, index) {
     if (!sprite) return;
     const tmpl = TEMPLATES[activePreset.template] || TEMPLATES.cat;
-    const file = walking ? tmpl.walkFile : tmpl.idleFile;
-    const count = walking ? tmpl.walkFrames : tmpl.idleFrames;
-    const clamped = index % count;
-    sprite.style.backgroundImage = `url("${spriteUrl(file)}")`;
-    sprite.style.backgroundSize = `${tmpl.frameSize * count}px ${tmpl.frameSize}px`;
-    sprite.style.backgroundPosition = `-${clamped * tmpl.frameSize}px 0px`;
+    const anim = walking ? tmpl.walk : tmpl.idle;
+    const clamped = index % anim.frames;
+    const x = anim.startX + clamped * tmpl.frameWidth;
+    sprite.style.backgroundImage = `url("${spriteUrl(anim.file)}")`;
+    sprite.style.backgroundSize = `${anim.sheetWidth}px ${anim.sheetHeight}px`;
+    sprite.style.backgroundPosition = `-${x}px -${anim.startY}px`;
   }
 
   function updateFacingTransform() {
@@ -132,11 +154,11 @@
   function tick(timestamp) {
     if (!running || !container) return;
 
-    const size = currentDisplaySize();
+    const dimensions = currentDisplayDimensions();
 
     if (!isIdle) {
       posX += speed * direction;
-      const maxX = window.innerWidth - size;
+      const maxX = Math.max(0, window.innerWidth - dimensions.width);
 
       if (posX <= 0) {
         posX = 0;
@@ -185,8 +207,8 @@
 
   window.addEventListener("resize", () => {
     if (!container) return;
-    const size = currentDisplaySize();
-    const maxX = window.innerWidth - size;
+    const dimensions = currentDisplayDimensions();
+    const maxX = Math.max(0, window.innerWidth - dimensions.width);
     if (posX > maxX) {
       posX = maxX;
       container.style.transform = `translateX(${posX}px)`;

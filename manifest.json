@@ -31,7 +31,11 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["assets/sounds/*.mp3", "assets/sounds/*.wav", "assets/sprites/*.png"],
+      "resources": [
+        "assets/sounds/*.mp3",
+        "assets/sounds/*.wav",
+        "assets/sprites/*.png"
+      ],
       "matches": ["<all_urls>"]
     }
   ]

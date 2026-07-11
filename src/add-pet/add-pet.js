@@ -4,6 +4,10 @@ const TEMPLATES = {
   ducky: { previewFile: "assets/sprites/ducky-idle.png", frameSize: 48, previewFrames: 2 },
   monster: { previewFile: "assets/sprites/monster-idle.png", frameSize: 32, previewFrames: 4 },
   pinkmonster: { previewFile: "assets/sprites/pinkmonster-idle.png", frameSize: 32, previewFrames: 4 },
+  punk: { previewFile: "assets/sprites/punk-idle.png", frameSize: 48, previewFrames: 4 },
+  tard: { previewFile: "assets/sprites/tard-idle.png", frameSize: 24, previewFrames: 4 },
+  wally: { previewFile: "assets/sprites/wally-idle.png", frameSize: 32, previewFrames: 2 },
+  finn: { previewFile: "assets/sprites/finn-idle.png", frameSize: 32, previewFrames: 9 },
 };
 
 const nameInput = document.getElementById("new-pet-name");
@@ -21,11 +25,15 @@ let pendingSoundDataUrl = null;
 
 function applyPreviewStyle(el, templateKey, colorDeg) {
   const tmpl = TEMPLATES[templateKey];
+  const frameWidth = tmpl.frameWidth || tmpl.frameSize;
+  const frameHeight = tmpl.frameHeight || tmpl.frameSize;
+  const sheetWidth = tmpl.sheetWidth || tmpl.frameSize * tmpl.previewFrames;
+  const sheetHeight = tmpl.sheetHeight || tmpl.frameSize;
   el.style.backgroundImage = `url("${chrome.runtime.getURL(tmpl.previewFile)}")`;
-  el.style.backgroundSize = `${tmpl.frameSize * tmpl.previewFrames}px ${tmpl.frameSize}px`;
+  el.style.backgroundSize = `${sheetWidth}px ${sheetHeight}px`;
   el.style.backgroundPosition = "0px 0px";
-  el.style.width = `${tmpl.frameSize}px`;
-  el.style.height = `${tmpl.frameSize}px`;
+  el.style.width = `${frameWidth}px`;
+  el.style.height = `${frameHeight}px`;
   el.style.filter = colorDeg ? `hue-rotate(${colorDeg}deg) saturate(1.2)` : "none";
 }
 
