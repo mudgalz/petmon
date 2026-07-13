@@ -4,8 +4,27 @@
   z-index: 2147483647;
   pointer-events: none;
   will-change: transform;
+  backface-visibility: hidden;
+  contain: layout style;
 }
 
 #desktop-pet-sprite {
-  will-change: transform, background-position;
+  will-change: transform;
+}
+
+#desktop-pet-facing {
+  position: absolute;
+  inset: 0;
+  transform-origin: center;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+#desktop-pet-sheet {
+  position: absolute;
+  inset: 0 auto auto 0;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  will-change: transform;
+  backface-visibility: hidden;
 }

@@ -3,10 +3,8 @@ const TEMPLATES = {
   dog: { previewFile: "assets/sprites/dog-idle.png", frameSize: 48, previewFrames: 4 },
   ducky: { previewFile: "assets/sprites/ducky-idle.png", frameSize: 48, previewFrames: 2 },
   monster: { previewFile: "assets/sprites/monster-idle.png", frameSize: 32, previewFrames: 4 },
-  pinkmonster: { previewFile: "assets/sprites/pinkmonster-idle.png", frameSize: 32, previewFrames: 4 },
   punk: { previewFile: "assets/sprites/punk-idle.png", frameSize: 48, previewFrames: 4 },
   tard: { previewFile: "assets/sprites/tard-idle.png", frameSize: 24, previewFrames: 4 },
-  wally: { previewFile: "assets/sprites/wally-idle.png", frameSize: 32, previewFrames: 2 },
   finn: { previewFile: "assets/sprites/finn-idle.png", frameSize: 32, previewFrames: 9 },
 };
 
@@ -60,7 +58,7 @@ function renderPetGrid() {
     const thumb = document.createElement("div");
     thumb.className = "sprite-thumb";
     const preview = applyPreviewStyle(thumb, preset.template, preset.color);
-    thumb.style.transform = `scale(${56 / preview.frameHeight})`;
+    thumb.style.transform = `scale(${54 / preview.frameHeight})`;
 
     const label = document.createElement("span");
     label.textContent = preset.name;

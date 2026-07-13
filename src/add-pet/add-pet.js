@@ -1,14 +1,20 @@
 const TEMPLATES = {
-  cat: { previewFile: "assets/sprites/cat-idle.png", frameSize: 48, previewFrames: 4 },
-  dog: { previewFile: "assets/sprites/dog-idle.png", frameSize: 48, previewFrames: 4 },
-  ducky: { previewFile: "assets/sprites/ducky-idle.png", frameSize: 48, previewFrames: 2 },
-  monster: { previewFile: "assets/sprites/monster-idle.png", frameSize: 32, previewFrames: 4 },
-  pinkmonster: { previewFile: "assets/sprites/pinkmonster-idle.png", frameSize: 32, previewFrames: 4 },
-  punk: { previewFile: "assets/sprites/punk-idle.png", frameSize: 48, previewFrames: 4 },
-  tard: { previewFile: "assets/sprites/tard-idle.png", frameSize: 24, previewFrames: 4 },
-  wally: { previewFile: "assets/sprites/wally-idle.png", frameSize: 32, previewFrames: 2 },
-  finn: { previewFile: "assets/sprites/finn-idle.png", frameSize: 32, previewFrames: 9 },
+  cat: previewTemplate("cat", 48, 4, 6),
+  dog: previewTemplate("dog", 48, 4, 6),
+  ducky: previewTemplate("ducky", 48, 2, 4),
+  monster: previewTemplate("monster", 32, 4, 6),
+  punk: previewTemplate("punk", 48, 4, 6),
+  tard: previewTemplate("tard", 24, 4, 6),
+  finn: previewTemplate("finn", 32, 9, 7),
 };
+
+function previewTemplate(key, frameSize, idleFrames, walkFrames) {
+  return {
+    frameSize,
+    idle: { file: `assets/sprites/${key}-idle.png`, frames: idleFrames, interval: 220 },
+    walk: { file: `assets/sprites/${key}-walk.png`, frames: walkFrames, interval: 110 },
+  };
+}
 
 const nameInput = document.getElementById("new-pet-name");
 const colorSlider = document.getElementById("color-slider");
@@ -22,36 +28,73 @@ const templateButtons = document.querySelectorAll(".template-option");
 
 let selectedTemplate = "cat";
 let pendingSoundDataUrl = null;
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-function applyPreviewStyle(el, templateKey, colorDeg) {
+function applyPreviewStyle(el, templateKey, colorDeg, walking) {
   const tmpl = TEMPLATES[templateKey];
-  const frameWidth = tmpl.frameWidth || tmpl.frameSize;
-  const frameHeight = tmpl.frameHeight || tmpl.frameSize;
-  const sheetWidth = tmpl.sheetWidth || tmpl.frameSize * tmpl.previewFrames;
-  const sheetHeight = tmpl.sheetHeight || tmpl.frameSize;
-  el.style.backgroundImage = `url("${chrome.runtime.getURL(tmpl.previewFile)}")`;
-  el.style.backgroundSize = `${sheetWidth}px ${sheetHeight}px`;
+  const state = walking ? tmpl.walk : tmpl.idle;
+  const sheetWidth = tmpl.frameSize * state.frames;
+
+  el.getAnimations().forEach((animation) => animation.cancel());
+  el.style.backgroundImage = `url("${chrome.runtime.getURL(state.file)}")`;
+  el.style.backgroundSize = `${sheetWidth}px ${tmpl.frameSize}px`;
   el.style.backgroundPosition = "0px 0px";
-  el.style.width = `${frameWidth}px`;
-  el.style.height = `${frameHeight}px`;
+  el.style.width = `${tmpl.frameSize}px`;
+  el.style.height = `${tmpl.frameSize}px`;
   el.style.filter = colorDeg ? `hue-rotate(${colorDeg}deg) saturate(1.2)` : "none";
+  // Normalize different source frame sizes to one readable card preview size.
+  el.style.transform = `scale(${64 / tmpl.frameSize})`;
+
+  if (reducedMotion.matches) return;
+
+  const keyframes = [];
+  for (let index = 0; index < state.frames; index++) {
+    keyframes.push({
+      offset: index / state.frames,
+      backgroundPosition: `-${index * tmpl.frameSize}px 0px`,
+      easing: "steps(1, end)",
+    });
+  }
+  keyframes.push({ offset: 1, backgroundPosition: "0px 0px" });
+  el.animate(keyframes, {
+    duration: state.frames * state.interval,
+    iterations: Infinity,
+  });
 }
 
 function refreshTemplatePreviews() {
   document.querySelectorAll(".template-preview").forEach((el) => {
-    applyPreviewStyle(el, el.dataset.preview, parseInt(colorSlider.value, 10));
+    const button = el.closest(".template-option");
+    const walking = button.matches(":hover");
+    applyPreviewStyle(el, el.dataset.preview, parseInt(colorSlider.value, 10), walking);
   });
 }
 
 templateButtons.forEach((btn) => {
+  btn.setAttribute("aria-pressed", "false");
+
   btn.addEventListener("click", () => {
     selectedTemplate = btn.dataset.template;
-    templateButtons.forEach((b) => b.classList.toggle("selected", b === btn));
+    templateButtons.forEach((b) => {
+      const selected = b === btn;
+      b.classList.toggle("selected", selected);
+      b.setAttribute("aria-pressed", String(selected));
+    });
     refreshTemplatePreviews();
+  });
+
+  btn.addEventListener("pointerenter", refreshTemplatePreviews);
+  btn.addEventListener("pointerleave", refreshTemplatePreviews);
+});
+
+colorSlider.addEventListener("input", () => {
+  const colorDeg = parseInt(colorSlider.value, 10);
+  document.querySelectorAll(".template-preview").forEach((el) => {
+    el.style.filter = colorDeg ? `hue-rotate(${colorDeg}deg) saturate(1.2)` : "none";
   });
 });
 
-colorSlider.addEventListener("input", refreshTemplatePreviews);
+reducedMotion.addEventListener("change", refreshTemplatePreviews);
 
 soundFileInput.addEventListener("change", () => {
   const file = soundFileInput.files[0];
@@ -109,4 +152,5 @@ cancelBtn.addEventListener("click", () => window.close());
 
 // Default selection on load
 templateButtons[0].classList.add("selected");
+templateButtons[0].setAttribute("aria-pressed", "true");
 refreshTemplatePreviews();

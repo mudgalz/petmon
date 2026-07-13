@@ -6,10 +6,8 @@
     dog: spriteTemplate(48, 48, "assets/sprites/dog-idle.png", 4, "assets/sprites/dog-walk.png", 6),
     ducky: spriteTemplate(48, 48, "assets/sprites/ducky-idle.png", 2, "assets/sprites/ducky-walk.png", 4),
     monster: spriteTemplate(32, 32, "assets/sprites/monster-idle.png", 4, "assets/sprites/monster-walk.png", 6),
-    pinkmonster: spriteTemplate(32, 32, "assets/sprites/pinkmonster-idle.png", 4, "assets/sprites/pinkmonster-walk.png", 6),
     punk: spriteTemplate(48, 48, "assets/sprites/punk-idle.png", 4, "assets/sprites/punk-walk.png", 6),
     tard: { ...spriteTemplate(24, 24, "assets/sprites/tard-idle.png", 4, "assets/sprites/tard-walk.png", 6), groundOffset: 3 },
-    wally: spriteTemplate(32, 32, "assets/sprites/wally-idle.png", 2, "assets/sprites/wally-walk.png", 6),
     finn: { ...spriteTemplate(32, 32, "assets/sprites/finn-idle.png", 9, "assets/sprites/finn-walk.png", 7), groundOffset: 6 },
   };
 
@@ -34,16 +32,22 @@
     { id: "builtin_quackers", name: "Quackers", template: "ducky", color: 0, sound: "assets/sounds/duck.mp3", builtin: true, words: ["Quack!", "QUACK!", "Quack quack!"] },
   ];
 
-  let container, sprite;
+  let container, facingLayer, sprite, spriteSheet;
   let posX = 0;
   let direction = 1;
-  let speed = 1.2;
-  let idleTicks = 0;
+  const MOVE_SPEED = 72; // px per second (equivalent to the old 1.2px at 60fps)
+  const BASE_FRAME_MS = 1000 / 60;
+  let idleRemainingMs = 0;
   let isIdle = false;
   let running = false;
   let rafId = null;
-  let frameStep = 0;
-  let lastFrameTime = 0;
+  let lastTickTime = 0;
+  let movementAnimation = null;
+  let facingAnimation = null;
+  let movementMaxX = 0;
+  let movementDuration = 0;
+  let mountObserver = null;
+  let spriteAnimation = null;
 
   let allPresets = [...BUILTIN_PRESETS];
   let activePreset = BUILTIN_PRESETS[0];
@@ -75,7 +79,14 @@
     sprite = document.createElement("div");
     sprite.id = "desktop-pet-sprite";
 
-    container.appendChild(sprite);
+    facingLayer = document.createElement("div");
+    facingLayer.id = "desktop-pet-facing";
+
+    spriteSheet = document.createElement("div");
+    spriteSheet.id = "desktop-pet-sheet";
+    sprite.appendChild(spriteSheet);
+    facingLayer.appendChild(sprite);
+    container.appendChild(facingLayer);
     document.documentElement.appendChild(container);
 
     const dimensions = currentDisplayDimensions();
@@ -86,11 +97,19 @@
   }
 
   function removeDom() {
+    if (movementAnimation) movementAnimation.cancel();
+    if (facingAnimation) facingAnimation.cancel();
+    if (spriteAnimation) spriteAnimation.cancel();
+    movementAnimation = null;
+    facingAnimation = null;
+    spriteAnimation = null;
     if (container && container.parentNode) {
       container.parentNode.removeChild(container);
     }
     container = null;
+    facingLayer = null;
     sprite = null;
+    spriteSheet = null;
   }
 
   function layoutContainer() {
@@ -100,7 +119,7 @@
     container.style.width = `${dimensions.width}px`;
     container.style.height = `${dimensions.height}px`;
     container.style.bottom = "0px";
-    container.style.transform = `translateX(${posX}px)`;
+    container.style.transform = `translate3d(${posX}px, 0, 0)`;
   }
 
   function applySpriteVisual() {
@@ -113,12 +132,12 @@
     sprite.style.height = `${tmpl.frameHeight}px`;
     sprite.style.position = "absolute";
     sprite.style.left = "50%";
+    sprite.style.overflow = "hidden";
     // Some source sheets include transparent canvas below the character's
     // feet. Move that padding below the viewport edge so visible pixels, not
     // the sprite canvas, sit on the ground.
     sprite.style.bottom = `${-(tmpl.groundOffset || 0) * scaleFactor}px`;
     sprite.style.imageRendering = "pixelated";
-    sprite.style.backgroundRepeat = "no-repeat";
     sprite.dataset.scaleFactor = scaleFactor;
 
     if (activePreset.color) {
@@ -127,92 +146,182 @@
       sprite.style.filter = "none";
     }
 
-    frameStep = 0;
-    setFrame(false, 0);
+    playSpriteAnimation(isIdle);
     updateFacingTransform();
   }
 
-  function setFrame(walking, index) {
-    if (!sprite) return;
+  function playSpriteAnimation(idle) {
+    if (!spriteSheet) return;
     const tmpl = TEMPLATES[activePreset.template] || TEMPLATES.cat;
-    const anim = walking ? tmpl.walk : tmpl.idle;
-    const clamped = index % anim.frames;
-    const x = anim.startX + clamped * tmpl.frameWidth;
-    sprite.style.backgroundImage = `url("${spriteUrl(anim.file)}")`;
-    sprite.style.backgroundSize = `${anim.sheetWidth}px ${anim.sheetHeight}px`;
-    sprite.style.backgroundPosition = `-${x}px -${anim.startY}px`;
+    const anim = idle ? tmpl.idle : tmpl.walk;
+    const interval = idle ? 220 : 110;
+
+    if (spriteAnimation) spriteAnimation.cancel();
+
+    spriteSheet.style.width = `${anim.sheetWidth}px`;
+    spriteSheet.style.height = `${anim.sheetHeight}px`;
+    spriteSheet.style.backgroundImage = `url("${spriteUrl(anim.file)}")`;
+    spriteSheet.style.backgroundSize = `${anim.sheetWidth}px ${anim.sheetHeight}px`;
+
+    const keyframes = [];
+    for (let index = 0; index < anim.frames; index++) {
+      const x = anim.startX + index * tmpl.frameWidth;
+      keyframes.push({
+        offset: index / anim.frames,
+        transform: `translate3d(-${x}px, -${anim.startY}px, 0)`,
+        easing: "steps(1, end)",
+      });
+    }
+    keyframes.push({
+      offset: 1,
+      transform: `translate3d(-${anim.startX}px, -${anim.startY}px, 0)`,
+    });
+
+    spriteAnimation = spriteSheet.animate(keyframes, {
+      duration: interval * anim.frames,
+      iterations: Infinity,
+    });
   }
 
   function updateFacingTransform() {
     if (!sprite) return;
     const scaleFactor = parseFloat(sprite.dataset.scaleFactor || "1");
-    const flip = direction === -1 ? -1 : 1;
     sprite.style.transformOrigin = "bottom center";
-    sprite.style.transform = `translateX(-50%) scale(${scaleFactor * flip}, ${scaleFactor})`;
+    sprite.style.transform = `translateX(-50%) scale(${scaleFactor})`;
+
+    // This inline value is a fallback for zero-width viewports and browsers
+    // without an active movement animation. Normally the synchronized
+    // compositor animation below controls the facing direction.
+    if (facingLayer && !facingAnimation) {
+      facingLayer.style.transform = `scaleX(${direction === -1 ? -1 : 1})`;
+    }
+  }
+
+  // A transform animation can be handled by Chrome's compositor thread. It
+  // therefore keeps travelling even while the page's main JavaScript thread
+  // is busy rendering an infinite-scroll batch or navigating.
+  function createMovementAnimation() {
+    if (!container) return;
+
+    if (movementAnimation) {
+      syncMovementSnapshot();
+      movementAnimation.cancel();
+    }
+    if (facingAnimation) facingAnimation.cancel();
+    facingAnimation = null;
+
+    const dimensions = currentDisplayDimensions();
+    movementMaxX = Math.max(0, window.innerWidth - dimensions.width);
+    posX = Math.min(Math.max(0, posX), movementMaxX);
+
+    if (movementMaxX === 0) {
+      movementAnimation = null;
+      movementDuration = 0;
+      container.style.transform = "translate3d(0, 0, 0)";
+      updateFacingTransform();
+      return;
+    }
+
+    movementDuration = (movementMaxX / MOVE_SPEED) * 1000;
+    movementAnimation = container.animate(
+      [
+        { transform: "translate3d(0, 0, 0)" },
+        { transform: `translate3d(${movementMaxX}px, 0, 0)` },
+      ],
+      {
+        duration: movementDuration,
+        iterations: Infinity,
+        direction: "alternate",
+        easing: "linear",
+      }
+    );
+
+    const progress = posX / movementMaxX;
+    const startingTime = direction === 1
+      ? progress * movementDuration
+      : movementDuration + (1 - progress) * movementDuration;
+    movementAnimation.currentTime = startingTime;
+
+    // Match the forward/backward halves of the movement cycle with instant
+    // facing changes at each wall. Transform animations remain compositor-run.
+    facingAnimation = facingLayer.animate(
+      [
+        { offset: 0, transform: "scaleX(1)", easing: "steps(1, end)" },
+        { offset: 0.5, transform: "scaleX(-1)", easing: "steps(1, end)" },
+        { offset: 1, transform: "scaleX(1)" },
+      ],
+      {
+        duration: movementDuration * 2,
+        iterations: Infinity,
+      }
+    );
+    facingAnimation.currentTime = startingTime;
+
+    if (isIdle) {
+      movementAnimation.pause();
+      facingAnimation.pause();
+    }
+  }
+
+  function syncMovementSnapshot() {
+    if (!movementAnimation || !movementDuration || movementAnimation.currentTime == null) {
+      return;
+    }
+
+    const currentTime = movementAnimation.currentTime;
+    const iteration = Math.floor(currentTime / movementDuration);
+    const progress = (currentTime % movementDuration) / movementDuration;
+    const nextDirection = iteration % 2 === 0 ? 1 : -1;
+
+    posX = nextDirection === 1
+      ? progress * movementMaxX
+      : (1 - progress) * movementMaxX;
+
+    if (direction !== nextDirection) {
+      direction = nextDirection;
+      updateFacingTransform();
+    }
   }
 
   function tick(timestamp) {
     if (!running || !container) return;
 
-    const dimensions = currentDisplayDimensions();
-
+    // Keep behavior timers stable when Chrome reduces main-thread frame
+    // frequency. Travel and sprite frames run separately on the compositor.
+    const elapsedMs = lastTickTime
+      ? Math.min(timestamp - lastTickTime, 100)
+      : BASE_FRAME_MS;
+    lastTickTime = timestamp;
+    syncMovementSnapshot();
     if (!isIdle) {
-      posX += speed * direction;
-      const maxX = Math.max(0, window.innerWidth - dimensions.width);
-
-      if (posX <= 0) {
-        posX = 0;
-        direction = 1;
-        updateFacingTransform();
-      } else if (posX >= maxX) {
-        posX = maxX;
-        direction = -1;
-        updateFacingTransform();
-      }
-
-      container.style.transform = `translateX(${posX}px)`;
-
-      if (timestamp - lastFrameTime > 110) {
-        lastFrameTime = timestamp;
-        frameStep++;
-        setFrame(true, frameStep);
-      }
-
-      if (Math.random() < 0.003) {
+      if (chanceForElapsedTime(0.003, elapsedMs)) {
         isIdle = true;
-        idleTicks = 60 + Math.floor(Math.random() * 120);
-        frameStep = 0;
-        setFrame(false, 0);
+        idleRemainingMs = 1000 + Math.random() * 2000;
+        playSpriteAnimation(true);
+        if (movementAnimation) movementAnimation.pause();
+        if (facingAnimation) facingAnimation.pause();
       }
 
-      if (Math.random() < 0.002) {
-        direction *= -1;
-        updateFacingTransform();
-      }
     } else {
-      if (timestamp - lastFrameTime > 220) {
-        lastFrameTime = timestamp;
-        frameStep++;
-        setFrame(false, frameStep);
-      }
-      idleTicks--;
-      if (idleTicks <= 0) {
+      idleRemainingMs -= elapsedMs;
+      if (idleRemainingMs <= 0) {
         isIdle = false;
-        frameStep = 0;
+        playSpriteAnimation(false);
+        if (movementAnimation) movementAnimation.play();
+        if (facingAnimation) facingAnimation.play();
       }
     }
 
     rafId = requestAnimationFrame(tick);
   }
 
+  function chanceForElapsedTime(chancePerFrame, elapsedMs) {
+    return Math.random() < 1 - Math.pow(1 - chancePerFrame, elapsedMs / BASE_FRAME_MS);
+  }
+
   window.addEventListener("resize", () => {
     if (!container) return;
-    const dimensions = currentDisplayDimensions();
-    const maxX = Math.max(0, window.innerWidth - dimensions.width);
-    if (posX > maxX) {
-      posX = maxX;
-      container.style.transform = `translateX(${posX}px)`;
-    }
+    createMovementAnimation();
   });
 
   // ---- Sound playback (routed through an offscreen document so it's never
@@ -261,13 +370,34 @@
   function start() {
     if (running) return;
     running = true;
+    lastTickTime = 0;
+    mountPet();
+  }
+
+  function mountPet() {
+    if (!running || container) return;
+
+    if (!document.documentElement) {
+      mountObserver = new MutationObserver(() => {
+        if (!document.documentElement) return;
+        mountObserver.disconnect();
+        mountObserver = null;
+        mountPet();
+      });
+      mountObserver.observe(document, { childList: true });
+      return;
+    }
+
     buildDom();
+    createMovementAnimation();
     rafId = requestAnimationFrame(tick);
   }
 
   function stop() {
     running = false;
     if (rafId) cancelAnimationFrame(rafId);
+    if (mountObserver) mountObserver.disconnect();
+    mountObserver = null;
     removeDom();
   }
 
@@ -276,6 +406,7 @@
     if (sprite) {
       layoutContainer();
       applySpriteVisual();
+      createMovementAnimation();
     }
   }
 
@@ -283,6 +414,7 @@
     if (!container) return;
     layoutContainer();
     applySpriteVisual();
+    createMovementAnimation();
   }
 
   // ---- Init from stored settings ----
