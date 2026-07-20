@@ -6,6 +6,7 @@ const TEMPLATES = {
   punk: { previewFile: "assets/sprites/punk-idle.png", frameSize: 48, previewFrames: 4 },
   tard: { previewFile: "assets/sprites/tard-idle.png", frameSize: 24, previewFrames: 4 },
   finn: { previewFile: "assets/sprites/finn-idle.png", frameSize: 32, previewFrames: 9 },
+  gorgon: { previewFile: "assets/sprites/gorgon-idle.png", frameSize: 128, previewFrames: 7 },
 };
 
 const BUILTIN_PRESETS = [

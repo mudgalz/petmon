@@ -6,6 +6,7 @@ const TEMPLATES = {
   punk: previewTemplate("punk", 48, 4, 6),
   tard: previewTemplate("tard", 24, 4, 6),
   finn: previewTemplate("finn", 32, 9, 7),
+  gorgon: previewTemplate("gorgon", 128, 7, 7),
 };
 
 function previewTemplate(key, frameSize, idleFrames, walkFrames) {

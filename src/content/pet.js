@@ -9,6 +9,7 @@
     punk: spriteTemplate(48, 48, "assets/sprites/punk-idle.png", 4, "assets/sprites/punk-walk.png", 6),
     tard: { ...spriteTemplate(24, 24, "assets/sprites/tard-idle.png", 4, "assets/sprites/tard-walk.png", 6), groundOffset: 3 },
     finn: { ...spriteTemplate(32, 32, "assets/sprites/finn-idle.png", 9, "assets/sprites/finn-walk.png", 7), groundOffset: 6 },
+    gorgon: spriteTemplate(128, 128, "assets/sprites/gorgon-idle.png", 7, "assets/sprites/gorgon-walk.png", 7),
   };
 
   function animation(file, frames, sheetWidth, sheetHeight, startX = 0, startY = 0) {
